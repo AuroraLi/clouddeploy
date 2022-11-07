@@ -1,0 +1,21 @@
+apiVersion: deploy.cloud.google.com/v1beta1
+kind: DeliveryPipeline
+metadata:
+  name: deploy-pipeline
+description: hello-world-python application delivery pipeline
+serialPipeline:
+ stages:
+%{ for env,settings in envs}
+ - targetId: ${env}
+   profiles: []%{ endfor }
+
+%{ for env,settings in envs}---
+apiVersion: deploy.cloud.google.com/v1beta1
+kind: Target
+metadata:
+  name: ${env}
+description: ${env} cluster
+gke:
+  cluster: projects/${settings.project_id}/locations/${region}/clusters/${settings.cluster}
+%{ if can(settings.approval) }requireApproval: true%{ endif }
+%{ endfor }
