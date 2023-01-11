@@ -2,4 +2,4 @@
 *.tfstate
 *.tfstate.backup
 ./docker-fluent-ffmpeg/**
-./.terraform/**
+.terraform/**

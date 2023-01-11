@@ -95,9 +95,10 @@ module "gke" {
   region                     = var.gcp_region
   zones                      = ["${var.gcp_region}-a", "${var.gcp_region}-b", "${var.gcp_region}-f"]
   network                    = module.vpc["${each.value.env}"].network_name
-  subnetwork                 = "subnet"
+  subnetwork                 = module.subnets["${each.value.env}"].subnets["${var.gcp_region}/subnet"].name
   ip_range_pods              = "pod"
   ip_range_services          = "svc"
+  datapath_provider          = "ADVANCED_DATAPATH"
   horizontal_pod_autoscaling = true
   enable_vertical_pod_autoscaling   = true
   create_service_account     = false

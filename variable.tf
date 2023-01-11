@@ -14,3 +14,7 @@ variable "billing"{
 variable "envs"{
     type = list(map(string))
 }
+
+variable "cicdsa" {
+    type = string
+}

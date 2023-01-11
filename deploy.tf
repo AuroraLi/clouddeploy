@@ -36,7 +36,7 @@ module "gcloud" {
 #   additional_components = ["kubectl", "beta"]
 
   create_cmd_entrypoint  = "gcloud"
-  create_cmd_body        = "deploy apply --file=clouddeploy.yaml --region=${var.gcp_region} --project=${module.deploy-project.project_id}"
+  create_cmd_body        = "deploy apply --file=${local_file.deploy_config.filename} --region=${var.gcp_region} --project=${module.deploy-project.project_id}"
   destroy_cmd_entrypoint = "gcloud"
   destroy_cmd_body       = "deploy --quiet delivery-pipelines delete deploy-pipeline"
   depends_on = [
@@ -55,7 +55,7 @@ resource "google_project_iam_member" "deploy_sa" {
 resource "google_project_iam_member" "github_sa" {
   project = module.deploy-project.project_id
   role    = "roles/clouddeploy.releaser"
-  member  = "serviceAccount:pulumi@iap-test-p3n5.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.cicdsa}"
   }
 # resource "google_project_iam_member" "build_log" {
 #     for_each = local.envs
@@ -75,17 +75,17 @@ resource "google_artifact_registry_repository" "image-repo" {
 resource "google_project_iam_member" "ar_sa" {
   project = module.deploy-project.project_id
   role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:pulumi@iap-test-p3n5.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.cicdsa}"
   }
 resource "google_project_iam_member" "gcs_sa" {
   project = module.deploy-project.project_id
   role    = "roles/clouddeploy.serviceAgent"
-  member  = "serviceAccount:pulumi@iap-test-p3n5.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.cicdsa}"
   }
 resource "google_project_iam_member" "cloudbuild_sa" {
   project = module.deploy-project.project_id
   role    = "roles/cloudbuild.serviceAgent"
-  member  = "serviceAccount:pulumi@iap-test-p3n5.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.cicdsa}"
   }
 resource "google_project_iam_member" "logs_sa" {
   project = module.deploy-project.project_id
