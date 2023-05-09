@@ -11,9 +11,6 @@ module "deploy-project" {
 #   version = "~> 10.1"
 
   name                 = "nats-deploy"
-  random_project_id    = true
-  folder_id  = 339514276699
-  org_id = 75928084081
   billing_account = var.billing
   activate_apis = [
       "artifactregistry.googleapis.com","clouddeploy.googleapis.com","cloudbuild.googleapis.com","storage-component.googleapis.com","container.googleapis.com"
@@ -22,27 +19,27 @@ module "deploy-project" {
 }
 
 
-resource "local_file" "deploy_config" {
-  filename = "${path.module}/clouddeploy.yaml"
-  content  = templatefile("clouddeploy.yaml.tftpl",{region="${var.gcp_region}",envs="${local.deploy-targets}"})
-}
+#resource "local_file" "deploy_config" {
+#  filename = "${path.module}/clouddeploy.yaml"
+#  content  = templatefile("clouddeploy.yaml.tftpl",{region="${var.gcp_region}",envs="${local.deploy-targets}"})
+#}
 
-module "gcloud" {
-  source  = "terraform-google-modules/gcloud/google"
-  version = "~> 2.0"
+#module "gcloud" {
+#   source  = "terraform-google-modules/gcloud/google"
+#   version = "~> 2.0"
 
-  platform = "linux"
-  skip_download = true
-#   additional_components = ["kubectl", "beta"]
+#   platform = "linux"
+#   skip_download = true
+# #   additional_components = ["kubectl", "beta"]
 
-  create_cmd_entrypoint  = "gcloud"
-  create_cmd_body        = "deploy apply --file=clouddeploy.yaml --region=${var.gcp_region} --project=${module.deploy-project.project_id}"
-  destroy_cmd_entrypoint = "gcloud"
-  destroy_cmd_body       = "deploy --quiet delivery-pipelines delete deploy-pipeline"
-  depends_on = [
-    # resource.local_file.deploy_config
-  ]
-}
+#   create_cmd_entrypoint  = "gcloud"
+#   create_cmd_body        = "deploy apply --file=clouddeploy.yaml --region=${var.gcp_region} --project=${module.deploy-project.project_id}"
+#   destroy_cmd_entrypoint = "gcloud"
+#   destroy_cmd_body       = "deploy --quiet delivery-pipelines delete deploy-pipeline"
+#   depends_on = [
+#     # resource.local_file.deploy_config
+#   ]
+# }
 
 resource "google_project_iam_member" "deploy_sa" {
     for_each = local.envs
@@ -80,12 +77,12 @@ resource "google_project_iam_member" "ar_sa" {
 resource "google_project_iam_member" "gcs_sa" {
   project = module.deploy-project.project_id
   role    = "roles/clouddeploy.serviceAgent"
-  member  = "serviceAccount:pulumi@iap-test-p3n5.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.github_sa}"
   }
 resource "google_project_iam_member" "cloudbuild_sa" {
   project = module.deploy-project.project_id
   role    = "roles/cloudbuild.serviceAgent"
-  member  = "serviceAccount:pulumi@iap-test-p3n5.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.github_sa}"
   }
 resource "google_project_iam_member" "logs_sa" {
   project = module.deploy-project.project_id
