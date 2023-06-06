@@ -1,7 +1,7 @@
 locals {
     deploy-targets = {
     for x in var.envs :
-    "${x.env}" => merge(x,{project_id="${module.project-factory["${x.env}"].project_id}"},{cluster="${module.gke["${x.env}"].name}"})
+    "${x.env}" => merge(x,{project_id="${module.project-factory["${x.env}"].project_id}"})
     
   }
 }
@@ -10,10 +10,10 @@ module "deploy-project" {
   source  = "terraform-google-modules/project-factory/google"
 #   version = "~> 10.1"
 
-  name                 = "nats-deploy"
+  name                 = "demoenv-deploy"
   random_project_id    = true
-  folder_id  = 339514276699
-  org_id = 75928084081
+  folder_id  = var.folder
+  org_id = var.org
   billing_account = var.billing
   activate_apis = [
       "artifactregistry.googleapis.com","clouddeploy.googleapis.com","cloudbuild.googleapis.com","storage-component.googleapis.com","container.googleapis.com"
@@ -38,7 +38,7 @@ module "gcloud" {
   create_cmd_entrypoint  = "gcloud"
   create_cmd_body        = "deploy apply --file=${local_file.deploy_config.filename} --region=${var.gcp_region} --project=${module.deploy-project.project_id}"
   destroy_cmd_entrypoint = "gcloud"
-  destroy_cmd_body       = "deploy --quiet delivery-pipelines delete deploy-pipeline"
+  destroy_cmd_body       = "deploy --quiet delete --file=${local_file.deploy_config.filename} --project=${module.deploy-project.project_id}"
   depends_on = [
     # resource.local_file.deploy_config
   ]
@@ -47,7 +47,7 @@ module "gcloud" {
 resource "google_project_iam_member" "deploy_sa" {
     for_each = local.envs
   project = module.project-factory["${each.value.env}"].project_id
-  role    = "roles/container.developer"
+  role    = "roles/run.developer"
   member  = "serviceAccount:${module.deploy-project.project_number}-compute@developer.gserviceaccount.com"
 }
 
@@ -64,10 +64,10 @@ resource "google_project_iam_member" "github_sa" {
 #   member  = "serviceAccount:${module.project-factory["${each.value.env}"].project_number}@cloudbuild.gserviceaccount.com"
 # }
 
-resource "google_artifact_registry_repository" "image-repo" {
+resource "google_artifact_registry_repository" "sample-repo" {
   location      = var.gcp_region
   project = module.deploy-project.project_id
-  repository_id = "video-process"
+  repository_id = "sampleapp"
   description   = "example docker repository"
   format        = "DOCKER"
 }
@@ -100,6 +100,17 @@ resource "google_project_iam_member" "logging_sa" {
   }
 
 
+
+resource "google_project_iam_member" "build_deploy_sa" {
+  project = module.deploy-project.project_id
+  role    = "roles/clouddeploy.developer"
+  member  = "serviceAccount:${module.deploy-project.project_number}@cloudbuild.gserviceaccount.com"
+  }
+resource "google_project_iam_member" "build_release_sa" {
+  project = module.deploy-project.project_id
+  role    = "roles/clouddeploy.operator"
+  member  = "serviceAccount:${module.deploy-project.project_number}@cloudbuild.gserviceaccount.com"
+  }
 resource "google_project_iam_member" "read_sa" {
   project = module.deploy-project.project_id
   role    = "roles/clouddeploy.jobRunner"
@@ -111,5 +122,28 @@ resource "google_project_iam_member" "ar_read_sa" {
     for_each = local.envs
   project = module.deploy-project.project_id
   role    = "roles/artifactregistry.reader"
-  member  = "serviceAccount:${module.project-factory[each.value.env].project_number}-compute@developer.gserviceaccount.com"
+  member  = "serviceAccount:service-${module.project-factory[each.value.env].project_number}@serverless-robot-prod.iam.gserviceaccount.com"
   }
+
+
+data "google_compute_default_service_account" "all" {
+    for_each = local.envs
+    project = module.project-factory[each.value.env].project_id
+}
+
+resource "google_service_account_iam_member" "gce-default-account-iam-all" {
+    for_each = local.envs
+  service_account_id = data.google_compute_default_service_account.all[each.value.env].name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${module.deploy-project.project_number}-compute@developer.gserviceaccount.com"
+}
+
+data "google_compute_default_service_account" "deploy" {
+    project = module.deploy-project.project_id
+}
+
+resource "google_service_account_iam_member" "gce-default-account-iam-deploy" {
+  service_account_id = data.google_compute_default_service_account.deploy.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${module.deploy-project.project_number}-compute@developer.gserviceaccount.com"
+}

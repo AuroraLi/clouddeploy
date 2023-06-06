@@ -1,0 +1,11 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: my-run-service
+  annotations: 
+    run.googleapis.com/description: stage env deployment
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: 1

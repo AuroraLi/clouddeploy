@@ -1,0 +1,59 @@
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: my-run-app
+description: main application pipeline
+serialPipeline:
+  stages:
+
+  - targetId: dev
+    profiles: [dev]
+  - targetId: stage
+    profiles: [stage]
+    strategy:
+      canary:
+        runtimeConfig:
+          cloudRun:
+            automaticTrafficControl: true
+        canaryDeployment:
+          percentages: [50]
+          verify: false
+  - targetId: prod
+    profiles: [prod]
+    strategy:
+      canary:
+        runtimeConfig:
+          cloudRun:
+            automaticTrafficControl: true
+        canaryDeployment:
+          percentages: [10]
+          verify: true
+
+---
+apiVersion: deploy.cloud.google.com/v1beta1
+kind: Target
+metadata:
+  name: dev
+description: dev cluster
+run:
+  location: projects/demoenv-dev-21a2/locations/us-central1
+
+---
+apiVersion: deploy.cloud.google.com/v1beta1
+kind: Target
+metadata:
+  name: stage
+description: stage cluster
+run:
+  location: projects/demoenv-stage-8d19/locations/us-central1
+
+
+---
+apiVersion: deploy.cloud.google.com/v1beta1
+kind: Target
+metadata:
+  name: prod
+description: prod cluster
+run:
+  location: projects/demoenv-prod-3d68/locations/us-central1
+requireApproval: true

@@ -18,3 +18,11 @@ variable "envs"{
 variable "cicdsa" {
     type = string
 }
+
+variable "folder" {
+  type = string
+}
+
+variable "org" {
+  type = string
+}

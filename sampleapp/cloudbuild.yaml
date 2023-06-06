@@ -22,7 +22,7 @@ steps:
       args: 
         - '-c'
         - |
-            docker build -t ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/video-process/mysampleapp:${SHORT_SHA} ./example
+            docker build -t ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/sampleapp/mysampleapp:${SHORT_SHA} .
   
   
   ### Test
@@ -35,30 +35,13 @@ steps:
       args: 
         - '-c'
         - |
-            docker push ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/video-process/mysampleapp:${SHORT_SHA}
+            docker push ${LOCATION}-docker.pkg.dev/${PROJECT_ID}/sampleapp/mysampleapp:${SHORT_SHA}
   
   
   
   ### Deploy
     - id: 'deploy'
-      name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+      name: 'gcr.io/google.com/cloudsdktool/cloud-sdk:slim'
       entrypoint: gcloud
-      args: ['deploy', 'releases', 'create', 'deploy-${SHORT_SHA}', '--delivery-pipeline', 'deploy-pipeline', '--region', '${LOCATION}', '--project', '${PROJECT_ID}', '--images','my-app-image=${LOCATION}-docker.pkg.dev/${PROJECT_ID}/video-process/mysampleapp:${SHORT_SHA}']
-      # env:
-      #   - 'KUBECONFIG=/kube/config'
-      # entrypoint: 'bash'
-      # args:
-      #   - '-c'
-      #   - |
-      #       PROJECT=$$(gcloud config get-value core/project)          
-  
-      #       gcloud container clusters get-credentials "${_CLUSTER}" \
-      #         --project "$${PROJECT}" \
-      #         --zone "${_ZONE}"  
-  
-  
-      #       sed -i 's|gcr.io/$PROJECT_ID/$APP_NAME:.*|gcr.io/$PROJECT_ID/$APP_NAME:${SHORT_SHA}|' ./k8s/deployments/canary/*.yaml
-            
-      #       kubectl get ns production || kubectl create ns production
-      #       kubectl apply --namespace production --recursive -f k8s/deployments/canary
-      #       kubectl apply --namespace production --recursive -f k8s/services
+      args: ['deploy', 'releases', 'create', 'deploy-${SHORT_SHA}', '--delivery-pipeline', 'my-run-app', '--region', '${LOCATION}', '--project', '${PROJECT_ID}', '--images','my-app-image=${LOCATION}-docker.pkg.dev/${PROJECT_ID}/sampleapp/mysampleapp:${SHORT_SHA}']
+ 

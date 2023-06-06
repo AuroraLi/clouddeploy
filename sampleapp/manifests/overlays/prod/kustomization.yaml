@@ -1,0 +1,5 @@
+resources:
+- ../../base
+patchesStrategicMerge:
+ - run.yaml
+# namePrefix: production-

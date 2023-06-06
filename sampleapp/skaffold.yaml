@@ -1,6 +1,54 @@
-apiVersion: skaffold/v2beta16
+apiVersion: skaffold/v3alpha1
 kind: Config
-deploy:
-  kubectl:
+metadata: 
+  name: deploy-run-quickstart
+manifests:
+  kustomize:
+    paths:
+      - manifests/base
+profiles:
+  # - name: local
+  #   build:
+  #     artifacts:
+  #     - image: sampleapp
+  #       docker:
+  #         cacheFrom:
+  #         # Local Docker builder replaces cache references to the artifact image with
+  #         # the tagged image reference, useful for caching from the previous build.
+  #         - us-central1-docker.pkg.dev/demoenv-deploy-3e07/sampleapp
+  #     local: {}
+  #   patches:
+  #     - op: remove
+  #       path: /deploy/cloudrun
+  #   manifests:
+  #     kustomize:
+  #         paths:
+  #           - manifests/overlays/local
+  #   deploy:
+  #     kubectl: {}
+  - name: dev
     manifests:
-      - k8s/k8s-*
+      kustomize:
+        paths:
+          - manifests/overlays/dev
+  - name: stage
+    manifests:
+      kustomize:
+        paths:
+          - manifests/overlays/stage
+  - name: prod
+    manifests:
+      kustomize:
+        paths:
+          - manifests/overlays/prod
+
+deploy:
+  cloudrun: {}
+
+verify:
+- name: verify-endpoint-test
+  container:
+    name: alpine
+    image: alpine
+    command: ["/bin/sh"]
+    args: ["-c", "wget #CLOUD_RUN_SERVICE_URLS"]
